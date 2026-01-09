@@ -1,21 +1,22 @@
 package routes
 
 import (
-	"log"
-	"os"
-
-	"github.com/basitkhan32/crud-api-go-gin/controllers"
+	"github.com/basitkhan32/crud-api-go-gin/modules/user"
 	"github.com/gin-gonic/gin"
 )
 
-func Routes() {
-	r := gin.Default()
-	r.POST("/create", controllers.CreateUserController)
-	r.GET("/read", controllers.ReadUserController)
-	r.GET("/read/:id", controllers.ReadUserIDController)
-	r.PUT("/update/:id ", controllers.UpdateUserController)
-	r.DELETE("/delete/:id", controllers.DeleteUserController)
-	port := os.Getenv("PORT")
-	log.Println("Router is working at port:", port)
-	r.Run(":" + port)
+func Routes(r *gin.Engine) {
+
+	// Public routes - no middleware
+	publicAPI := r.Group("/")
+	{
+		user.GetPublicRoutes(publicAPI)
+	}
+
+	// Protected routes - with middleware
+	protectedAPI := r.Group("/")
+	protectedAPI.Use(user.IsXAPIProvided())
+	{
+		user.GetProtectedRoutes(protectedAPI)
+	}
 }
