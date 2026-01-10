@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/basitkhan32/crud-api-go-gin/db"
+	"github.com/basitkhan32/crud-api-go-gin/modules/user"
 	"github.com/basitkhan32/crud-api-go-gin/routes"
 	"github.com/basitkhan32/crud-api-go-gin/utils"
 	"github.com/gin-gonic/gin"
@@ -21,7 +23,11 @@ func main() {
 	db.DatabaseConnection()
 
 	// apply migration
-	// migrations.DBMigration()
+	err := db.DB.AutoMigrate(&user.User{})
+	if err != nil {
+		log.Fatalf("Migration failed: %v", err)
+	}
+	log.Println("Migration done successfully")
 
 	// setup router
 	routes.Routes(r)

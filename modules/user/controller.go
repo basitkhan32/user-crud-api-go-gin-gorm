@@ -3,7 +3,7 @@ package user
 import (
 	"net/http"
 
-	"github.com/basitkhan32/crud-api-go-gin/connections"
+	"github.com/basitkhan32/crud-api-go-gin/db"
 	"github.com/basitkhan32/crud-api-go-gin/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -14,10 +14,14 @@ func CreateUser(c *gin.Context) {
 	newUser := User{}
 
 	err := c.ShouldBindJSON(&newUser)
-	utils.ErrBadRequest(c, err)
+	if utils.ErrBadRequest(c, err) {
+		return
+	}
 
-	result := connections.DB.Create(&newUser)
-	utils.ErrServerCrash(c, result.Error)
+	result := db.DB.Create(&newUser)
+	if utils.ErrServerCrash(c, result.Error) {
+		return
+	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "User created successfully",
@@ -29,8 +33,10 @@ func DeleteUser(c *gin.Context) {
 	var deletedUser User
 	id := c.Param("id")
 
-	result := connections.DB.Delete(&deletedUser, id)
-	utils.ErrServerCrash(c, result.Error)
+	result := db.DB.Delete(&deletedUser, id)
+	if utils.ErrServerCrash(c, result.Error) {
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "User deleted successfully with id:" + id,
@@ -40,8 +46,10 @@ func DeleteUser(c *gin.Context) {
 
 func GetUser(c *gin.Context) {
 	var users []User
-	result := connections.DB.Find(&users)
-	utils.ErrServerCrash(c, result.Error)
+	result := db.DB.Find(&users)
+	if utils.ErrServerCrash(c, result.Error) {
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Users fetched successfully",
@@ -52,8 +60,10 @@ func GetUser(c *gin.Context) {
 func GetUserID(c *gin.Context) {
 	var foundUser User
 	id := c.Param("id")
-	result := connections.DB.First(&foundUser, id)
-	utils.ErrServerCrash(c, result.Error)
+	result := db.DB.First(&foundUser, id)
+	if utils.ErrServerCrash(c, result.Error) {
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "User with id " + string(id) + " fetched successfully",
@@ -66,15 +76,21 @@ func UpdateUser(c *gin.Context) {
 	var update_user User
 	id := c.Param("id")
 
-	result := connections.DB.First(&existing_user, id)
-	utils.ErrServerCrash(c, result.Error)
+	result := db.DB.First(&existing_user, id)
+	if utils.ErrServerCrash(c, result.Error) {
+		return
+	}
 
 	// bind to update_user
 	err := c.ShouldBindJSON(&update_user)
-	utils.ErrBadRequest(c, err)
+	if utils.ErrBadRequest(c, err) {
+		return
+	}
 
-	update := connections.DB.Model(&existing_user).Updates(&update_user)
-	utils.ErrServerCrash(c, update.Error)
+	update := db.DB.Model(&existing_user).Updates(&update_user)
+	if utils.ErrServerCrash(c, update.Error) {
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "User updated successfully",
