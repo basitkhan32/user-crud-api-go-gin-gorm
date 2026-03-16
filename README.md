@@ -1,283 +1,219 @@
-# CRUD API with Gin Framework and GORM
+# User CRUD API — Go, Gin, GORM, PostgreSQL
 
-A RESTful API built with Go, using the Gin web framework and GORM ORM for PostgreSQL database operations. This project implements complete CRUD (Create, Read, Update, Delete) operations for user management.
+A RESTful API built with **Go**, using the **Gin** web framework and **GORM** ORM against a **PostgreSQL** database. Implements full user management — authentication (register / login / password update) and protected CRUD operations guarded by an `X-API-KEY` header middleware.
 
-## Features
+---
 
-- **RESTful API** endpoints for user management
-- **PostgreSQL** database integration using GORM
-- **Gin Framework** for high-performance routing
-- **Environment variables** configuration with godotenv
-- **Clean architecture** with separated concerns (models, controllers, routes, connections)
-- **Database migrations** support
+## Stack
 
-## Prerequisites
+| | Technology |
+|---|---|
+| Language | Go 1.25 |
+| Framework | Gin v1.11 |
+| ORM | GORM v1.31 + pgx v5 driver |
+| Database | PostgreSQL |
+| Config | godotenv |
+| Dev reload | Air (hot reload via `.air.toml`) |
 
-Before running this application, make sure you have the following installed:
-
-- Go 1.25.5 or higher
-- PostgreSQL database
-- Git
-
-## Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/basitkhan32/crud-api-go-gin.git
-   cd crud-api-go-gin
-   ```
-
-2. **Install dependencies**
-   ```bash
-   go mod download
-   ```
-
-3. **Set up environment variables**
-   
-   Create a `.env` file in the root directory with the following variables:
-   ```env
-   DB_STRING=host=localhost user=your_user password=your_password dbname=your_db port=5432 sslmode=disable
-   PORT=8080
-   ```
-
-4. **Run database migrations** (if needed)
-   
-   The application uses GORM's AutoMigrate feature. You can run migrations using the migration package.
-
-## Running the Application
-
-1. **Build and run**
-   ```bash
-   go run cmd/main.go
-   ```
-
-2. **Or build the executable**
-   ```bash
-   go build -o main cmd/main.go
-   ./main
-   ```
-
-The server will start on the port specified in your `.env` file (default: 8080).
-
-## 📡 API Endpoints
-
-### Base URL
-```
-http://localhost:8080
-```
-
-### Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/create` | Create a new user |
-| GET | `/read` | Get all users |
-| GET | `/read/:id` | Get a user by ID |
-| PUT | `/update/:id` | Update a user by ID |
-| DELETE | `/delete/:id` | Delete a user by ID |
-
-### Request/Response Examples
-
-#### 1. Create User
-**Request:**
-```bash
-POST /create
-Content-Type: application/json
-
-{
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "age": 30
-}
-```
-
-**Response:**
-```json
-{
-  "message": "User created successfully",
-  "user": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "age": 30
-  }
-}
-```
-
-#### 2. Get All Users
-**Request:**
-```bash
-GET /read
-```
-
-**Response:**
-```json
-{
-  "message": "Users fetched successfully",
-  "users": [
-    {
-      "id": 1,
-      "name": "John Doe",
-      "email": "john.doe@example.com",
-      "age": 30
-    }
-  ]
-}
-```
-
-#### 3. Get User by ID
-**Request:**
-```bash
-GET /read/1
-```
-
-**Response:**
-```json
-{
-  "message": "User with id 1 fetched successfully",
-  "user": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "age": 30
-  }
-}
-```
-
-#### 4. Update User
-**Request:**
-```bash
-PUT /update/1
-Content-Type: application/json
-
-{
-  "name": "Jane Doe",
-  "email": "jane.doe@example.com",
-  "age": 28
-}
-```
-
-**Response:**
-```json
-{
-  "message": "User updated successfully",
-  "user": {
-    "name": "Jane Doe",
-    "email": "jane.doe@example.com",
-    "age": 28
-  }
-}
-```
-
-#### 5. Delete User
-**Request:**
-```bash
-DELETE /delete/1
-```
-
-**Response:**
-```json
-{
-  "message": "User deleted successfully with id:1",
-  "user": {}
-}
-```
+---
 
 ## Project Structure
 
 ```
-crud-api-gin/
+.
 ├── cmd/
-│   └── main.go              # Application entry point
-├── connections/
-│   └── db_connection.go     # Database connection setup
-├── controllers/
-│   ├── create_controller.go # Create user handler
-│   ├── read_controller.go   # Read users handlers
-│   ├── update_controller.go # Update user handler
-│   └── delete_controller.go # Delete user handler
-├── migrations/
-│   └── db_migration.go      # Database migration logic
-├── models/
-│   └── user_model.go        # User data model
+│   └── main.go               # Entry point — boots env, DB, migrations, router
+├── db/
+│   ├── connections.go        # Opens PostgreSQL connection; auto-creates DB if missing
+│   └── migrations.go         # GORM AutoMigrate for all models
+├── modules/
+│   ├── auth/
+│   │   ├── controller.go     # Register, Login, UpdatePassword handlers
+│   │   ├── model.go          # Request body structs with binding validation
+│   │   └── routes.go         # Mounts /auth/* routes
+│   └── user/
+│       ├── controller.go     # CreateUser, GetUser, GetUserID, UpdateUser, DeleteUser
+│       ├── middleware.go     # X-API-KEY guard — aborts 401 if header missing
+│       ├── model.go          # User struct (soft-delete via gorm.DeletedAt)
+│       └── routes.go         # Public + protected route groups
 ├── routes/
-│   └── routes.go            # API routes definition
+│   └── routes.go             # Top-level router — wires public and protected groups
 ├── utils/
-│   └── env.go               # Environment variables loader
-├── tmp/
-│   └── main                 # Compiled binary (dev)
-├── go.mod                   # Go module dependencies
-├── go.sum                   # Dependencies checksums
-├── .env                     # Environment variables (not in repo)
-└── README.md                # This file
+│   ├── env.go                # Loads .env via godotenv
+│   └── errors.go             # ErrBadRequest / ErrServerCrash helpers
+├── .air.toml                 # Air hot-reload config
+├── .env.example              # Environment variable reference
+├── go.mod
+└── go.sum
 ```
-
-## Database Schema
-
-### User Model
-
-| Field | Type | Description |
-|-------|------|-------------|
-| ID | uint | Primary key (auto-increment) |
-| Name | string | User's name |
-| Email | *string | User's email (nullable) |
-| Age | uint8 | User's age |
-| CreatedAt | time.Time | Record creation timestamp (GORM) |
-| UpdatedAt | time.Time | Record update timestamp (GORM) |
-| DeletedAt | gorm.DeletedAt | Soft delete timestamp (GORM) |
-
-## Technologies Used
-
-- **[Go](https://golang.org/)** - Programming language
-- **[Gin](https://github.com/gin-gonic/gin)** - Web framework
-- **[GORM](https://gorm.io/)** - ORM library
-- **[PostgreSQL](https://www.postgresql.org/)** - Database
-- **[godotenv](https://github.com/joho/godotenv)** - Environment variables management
-
-## Development
-
-### Adding New Routes
-
-1. Create a new controller in `controllers/`
-2. Define your handler function
-3. Register the route in `routes/routes.go`
-
-### Running Migrations
-
-To run database migrations manually:
-
-```go
-import "github.com/basitkhan32/crud-api-go-gin/migrations"
-
-migrations.DBMigration()
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is open source and available under the MIT License.
-
-## 👤 Author
-
-**Basit Khan**
-
-- GitHub: [@basitkhan32](https://github.com/basitkhan32)
-
-## Acknowledgments
-
-- Gin Web Framework team
-- GORM team
-- Go community
 
 ---
 
-**Note:** Remember to never commit your `.env` file or any sensitive credentials to version control. Add `.env` to your `.gitignore` file.
+## API Endpoints
+
+### Auth — Public (no authentication required)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/auth/register` | Register a new user |
+| `POST` | `/auth/login` | Login with email and password |
+| `POST` | `/auth/update-password` | Update password for an existing user |
+
+### User — Public
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/user/create` | Create a user (no API key needed) |
+
+### User — Protected (requires `X-API-KEY` header)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/user/` | Create a user |
+| `GET` | `/user/all` | Get all users |
+| `GET` | `/user/:id` | Get a single user by ID |
+| `PUT` | `/user/:id` | Update a user by ID |
+| `DELETE` | `/user/:id` | Soft-delete a user by ID |
+
+> All protected routes require the header: `X-API-KEY: <your-key>`
+> Requests without it receive `401 Unauthorized`.
+
+---
+
+## Request & Response Examples
+
+### POST `/auth/register`
+```json
+// Request
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "age": 28,
+  "password": "secret123",
+  "confirm_password": "secret123"
+}
+
+// Response 201
+{
+  "message": "User registered successfully",
+  "user": { "id": 1, "name": "John Doe", "email": "john@example.com", "age": 28, "created_at": "..." }
+}
+```
+
+### POST `/auth/login`
+```json
+// Request
+{ "email": "john@example.com", "password": "secret123" }
+
+// Response 200
+{ "message": "User logged in successfully", "user": { "id": 1, "name": "John Doe", ... } }
+```
+
+### POST `/auth/update-password`
+```json
+// Request
+{ "email": "john@example.com", "old_password": "secret123", "new_password": "newpass456" }
+
+// Response 200
+{ "message": "Password updated successfully", "user": { ... } }
+```
+
+### GET `/user/all` *(X-API-KEY required)*
+```json
+// Response 200
+{
+  "message": "Users fetched successfully",
+  "users": [
+    { "id": 1, "name": "John Doe", "email": "john@example.com", "age": 28, "created_at": "..." }
+  ]
+}
+```
+
+### PUT `/user/:id` *(X-API-KEY required)*
+```json
+// Request
+{ "name": "Jane Doe", "age": 30 }
+
+// Response 200
+{ "message": "User updated successfully", "user": { "id": 1, "name": "Jane Doe", "age": 30, ... } }
+```
+
+---
+
+## Data Model
+
+### User
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `uint` | Primary key, auto-increment |
+| `name` | `string` | — |
+| `email` | `string` | Required, validated as email |
+| `age` | `uint8` | — |
+| `password` | `string` | Omitted from all JSON responses (`json:"-"`) |
+| `created_at` | `time.Time` | Set by GORM |
+| `updated_at` | `time.Time` | Set by GORM |
+| `deleted_at` | `gorm.DeletedAt` | Soft delete — records are never hard-deleted |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Go 1.21+
+- PostgreSQL running locally (or a connection string to a remote instance)
+
+### 1. Clone & install dependencies
+
+```bash
+git clone https://github.com/basitkhan32/user-crud-api-go-gin-gorm.git
+cd user-crud-api-go-gin-gorm
+go mod download
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```env
+PORT=8080
+GIN_MODE=release
+DB_STRING=postgresql://<user>:<password>@localhost:5432/<dbname>?sslmode=disable
+DB_NAME=<dbname>
+```
+
+### 3. Run
+
+```bash
+# Development with hot reload (requires Air)
+go install github.com/air-verse/air@latest
+air
+
+# Or run directly
+go run cmd/main.go
+```
+
+The server starts on `http://localhost:8080` (or the `PORT` in your `.env`).
+GORM runs `AutoMigrate` on startup — the `users` table is created automatically.
+
+---
+
+## Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `PORT` | Port the server listens on | `8080` |
+| `GIN_MODE` | `debug` or `release` | `release` |
+| `DB_STRING` | Full PostgreSQL connection string | `postgresql://user:pass@localhost:5432/mydb?sslmode=disable` |
+| `DB_NAME` | Database name (used to auto-create DB if missing) | `mydb` |
+
+---
+
+## Author
+
+**Abdul Basit Khan** — [@basitkhan32](https://github.com/basitkhan32)
